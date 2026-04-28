@@ -8,11 +8,15 @@
 
 ### Repositorios
 
+[Repositorio Moreyra](https://github.com/moreyrajulian/TP3-SdC-2026)
+
+[Repositorio Galoppo](https://github.com/JoseMGaloppo/TP3-SdC-2026)
+
 ---
 
 # 1. Introducción General
 
-
+Este repositorio contiene la implementación de un sistema de arranque y transición de arquitectura desarrollado para la asignatura Sistemas de Computación (2026). El proyecto se centra en la programación bare-metal sobre arquitectura x86, prescindiendo de capas de abstracción de sistemas operativos para interactuar directamente con el hardware y la CPU.
 
 ---
 
