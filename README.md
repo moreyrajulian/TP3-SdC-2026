@@ -38,7 +38,7 @@ En una primera etapa se desarrolló un **MBR mínimo funcional** utilizando la f
 
 Este enfoque permitió generar una imagen binaria básica capaz de ser interpretada por el emulador **QEMU**, facilitando la validación inicial del entorno de ejecución.
 
-![MBRbasic](/TP3-SdC-2026/img/MBRbasic.png)
+![MBRbasic](img/MBRbasic.png)
 
 ---
 
@@ -126,7 +126,7 @@ Cuando se alcanza el final del mensaje:
 - `hlt` detiene la CPU
 - Se ejecuta un bucle infinito para evitar comportamiento indefinido
 
-![MBR2](/TP3-SdC-2026/img/MBR2.png)
+![MBR2](img/MBR2.png)
 ---
 
 # 7. Depuración y Análisis con GDB
@@ -139,8 +139,8 @@ qemu-system-i386 -fda main.img -boot a -s -S -monitor stdio
 Se abre puerto
 Se conecta GDB por 1234
 
-![GDB1](/TP3-SdC-2026/img/gdb1.png)
-![GDB1](/TP3-SdC-2026/img/gdb2.png)
+![GDB1](img/gdb1.png)
+![GDB1](img/gdb2.png)
 
 ---
 
@@ -154,11 +154,11 @@ Se realizó una comparación entre:
 - `hd` (hexdump)
 
 Ubicación de la firma:
-![firma](/TP3-SdC-2026/img/firma.png)
+![firma](img/firma.png)
 
 Ubicación de código en objdump y hd:
-![objdump](/TP3-SdC-2026/img/objdump.png)
-![hd](/TP3-SdC-2026/img/hd.png)
+![objdump](img/objdump.png)
+![hd](img/hd.png)
 
 ---
 
