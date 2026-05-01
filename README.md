@@ -12,13 +12,19 @@
 
 [Repositorio Galoppo](https://github.com/JoseMGaloppo/TP3-SdC-2026)
 
+[Repositorio Diaz](https://github.com/Pablodadiaz/TP3-SdC-2026)
+
 ---
 
 # 1. Introducción General
 
-Este repositorio contiene la implementación de un sistema de arranque y transición de arquitectura desarrollado para la asignatura Sistemas de Computación (2026). El proyecto se centra en la programación bare-metal sobre arquitectura x86, prescindiendo de capas de abstracción de sistemas operativos para interactuar directamente con el hardware y la CPU.
+Este trabajo presenta la implementación de un sistema de arranque y transición de arquitectura desarrollado para la asignatura Sistemas de Computación (2026). El objetivo principal es comprender en profundidad el proceso de inicialización de una computadora desde sus niveles más básicos, trabajando en un entorno bare-metal sobre arquitectura x86.
 
----
+A lo largo del proyecto se desarrollan distintos componentes clave del proceso de arranque, comenzando desde un MBR mínimo funcional hasta la transición al Modo Protegido, configurando manualmente estructuras fundamentales como la Tabla Global de Descriptores (GDT). Todo el desarrollo se realiza sin la intervención de un sistema operativo, permitiendo interactuar directamente con el hardware y observar el comportamiento real del procesador.
+
+Además, se emplean herramientas como QEMU y GDB para la emulación y depuración del sistema, lo que facilita el análisis detallado del flujo de ejecución, la gestión de memoria y los mecanismos de protección implementados por la arquitectura. Este enfoque permite no solo validar el funcionamiento del código, sino también comprender los errores y excepciones que surgen durante la ejecución, como el caso del triple fault.
+
+El resultado es una aproximación práctica y detallada al funcionamiento interno del proceso de arranque en sistemas x86, integrando conceptos teóricos con su implementación directa a bajo nivel.
 
 # 2. Organización de los Repositorios
 
@@ -32,7 +38,6 @@ Si bien la estructura general del documento se mantiene constante, es posible en
 
 Esto permite experimentar con distintas configuraciones manteniendo una base conceptual común.
 
----
 
 # 3. Implementación Inicial del MBR
 
@@ -44,16 +49,10 @@ Este enfoque permitió generar una imagen binaria básica capaz de ser interpret
 
 ![MBRbasic](img/MBRbasic.png)
 
----
 
 # 4. Desarrollo en Lenguaje Ensamblador
 
 En una segunda etapa se implementó un MBR más avanzado mediante **lenguaje ensamblador en modo real (16 bits)**.
-
-Para ello se utilizó una cadena de herramientas compuesta por:
-
-- Ensamblador
-- Linker
 
 
 ## 4.1 Uso de la Interrupción 0x10
@@ -66,7 +65,6 @@ correspondiente a los **servicios de video de la BIOS**, específicamente en mod
 
 Esto permitió la impresión directa de caracteres en pantalla sin depender de un sistema operativo.
 
----
 
 ## 4.2 Código Fuente del MBR
 
@@ -98,7 +96,6 @@ msg:
     .byte 0
 ```
 
----
 
 ## 4.3 Análisis del Código Ensamblador
 
@@ -131,27 +128,33 @@ Cuando se alcanza el final del mensaje:
 - Se ejecuta un bucle infinito para evitar comportamiento indefinido
 
 ![MBR2](img/MBR2.png)
----
 
-# 7. Depuración y Análisis con GDB
 
-Además del desarrollo del código ensamblador, se realizó un análisis detallado utilizando **GDB (GNU Debugger)**.
+## 4.4 Depuración y Análisis con GDB
 
-Comando usado
-qemu-system-i386 -fda main.img -boot a -s -S -monitor stdio
+Además del desarrollo del código en ensamblador, se llevó a cabo un proceso de depuración y análisis detallado utilizando **GDB** (GNU Debugger), lo que permitió observar el comportamiento del sistema durante las primeras etapas del arranque.
 
-Se abre puerto
+Para facilitar la depuración remota, se ejecutó el emulador QEMU con las siguientes opciones:
+`qemu-system-i386 -fda main.img -boot a -s -S -monitor stdio`
 
-Se conecta GDB por 1234
+Donde:
+
+* `-s` habilita un servidor GDB en el puerto 1234.
+* `-S` detiene la ejecución de la CPU al inicio, permitiendo la conexión del depurador antes de ejecutar instrucciones.
+* `-monitor stdio` habilita la consola de monitoreo de QEMU en la terminal.
+
+Una vez iniciado QEMU, se establece la conexión desde GDB al puerto habilitado:
+`target remote localhost:1234`
+
+Esto permite inspeccionar el estado de la CPU, incluyendo registros, memoria y flujo de ejecución, desde el primer instante del bootloader.
+
+A continuación, se muestran capturas del proceso de depuración:
 
 ![GDB1](img/gdb1.png)
 ![GDB1](img/gdb2.png)
 
----
 
-# 8. Verificación del Binario Generado
-
-## 9.1 Comparación entre objdump y hd
+# 5. Comparación entre objdump y hd
 
 Se realizó una comparación entre:
 
@@ -165,45 +168,163 @@ Ubicación de código en objdump y hd:
 ![objdump](img/objdump.png)
 ![hd](img/hd.png)
 
----
 
-# 10. Modo protegido
+# 6. Modo protegido
 
-Para realizar la transición a Modo Protegido sin utilizar macros, se desarrolló un código en lenguaje ensamblador que configura las estructuras de seguridad de la memoria directamente a nivel de hardware.
+Para realizar la transición a Modo Protegido sin utilizar macros, se desarrolló un código en lenguaje ensamblador que configura las estructuras de protección de memoria directamente a nivel de hardware.
 
-Para cumplir con la consigna de poseer espacios de memoria diferenciados, se construyó manualmente la Tabla Global de Descriptores (GDT) estableciendo los bytes de cada entrada:
+Para cumplir con la consigna de poseer espacios de memoria diferenciados, se construyó manualmente la Tabla Global de Descriptores (GDT), definiendo explícitamente los bytes de cada entrada:
 
 - **Descriptor Nulo**: Requisito arquitectónico (8 bytes en cero).
 
-- **Segmento de Código (Selector 0x08)**: Se configuró con la dirección base 0x00000000, límite de 0xFFFFF y permisos de ejecución/lectura.
+- **Segmento de Código** (Selector 0x08): Se configuró con dirección base 0x00000000, límite 0xFFFFF y permisos de ejecución/lectura.
 
-- **Segmento de Datos (Selector 0x10)**: Para diferenciar su espacio, se le asignó una dirección base distinta: 0x00010000 (modificando el cuarto byte del descriptor a 0x01).
+- **Segmento de Datos** (Selector 0x10): Para diferenciar su espacio, se le asignó una dirección base distinta: 0x00010000 (modificando el cuarto byte del descriptor a 0x01).
 
-El código se encuentra en *src/asm.S*
+El código se encuentra en src/protected_mode.S
 
-Para comprobar la protección de memoria, se cambiaron los bits de acceso del Segmento de Datos. El byte de atributos se modificó a 0b10010000, configurándolo explícitamente como de Solo Lectura.
 
-***¿Qué sucede?***
+## Transición a Modo Protegido
 
-Al depurar el binario modificado con GDB, se observó que la violación de seguridad ocurre de manera temprana durante la inicialización de los registros de segmento. Específicamente, la ejecución se interrumpe al intentar ejecutar la instrucción mov %eax, %ss (en la dirección 0x7c21 del depurador).
-Esto sucede porque la arquitectura x86 prohíbe cargar un selector de "Solo Lectura" en el registro del Segmento de Pila (%ss). Al intentarlo, la Unidad de Segmentación rechaza la operación e inmediatamente eleva una excepción de hardware
+El flujo principal del código realiza los pasos clásicos para cambiar desde Modo Real (16 bits) a Modo Protegido (32 bits):
+
+1. Deshabilitación de interrupciones (cli)  
+Se evita que ocurra cualquier interrupción durante la transición, ya que el sistema aún no tiene configurada una IDT válida.
+
+2. Carga de la GDT (lgdt)  
+Se carga el registro GDTR con la dirección base y el tamaño de la GDT definida.
+
+3. Habilitación de la línea A20  
+Se activa la línea A20 mediante el puerto 0x92, permitiendo acceder a memoria por encima de 1 MB.
+
+4. Activación del bit PE en CR0  
+Se modifica el registro de control CR0 seteando el bit 0 (Protection Enable), lo que habilita el Modo Protegido.
+
+5. Salto largo (ljmp)  
+Se realiza un salto lejano al selector de código (0x08), lo que:
+- Limpia el pipeline de ejecución
+- Carga correctamente el registro CS
+- Completa la transición a modo protegido
+
+
+## Inicialización en Modo Protegido
+
+Una vez en .code32, se configuran los registros de segmento:
+
+- Todos los segmentos de datos (ds, es, fs, gs, ss) se cargan con el selector 0x10.
+- Se inicializa el stack apuntando a la dirección 0x90000, dentro del espacio definido por el segmento de datos.
+
+
+## Caso 1: Violación de memoria (Segmento de solo lectura)
+
+Para comprobar la protección de memoria, se modificaron los bits de acceso del Segmento de Datos, configurándolo explícitamente como de solo lectura.
+
+En el código se incluye la siguiente instrucción de prueba:
+
+```asm
+movl $0x00000000, %ebx
+movb $0xAA, (%ebx)
+```
+
+Esta operación intenta escribir en memoria para forzar una violación de permisos.
+
+Pero es curioso ya que el fallo ocurre incluso antes de esta instrucción. Al intentar cargar el registro de pila (%ss) con un selector que apunta a un descriptor de solo lectura, el procesador detecta una configuración inválida y genera una excepción.
+
+![teorico](img/teorico.png)
+
+### ¿Qué debería suceder a continuación?
+
+Dado que el programa se ejecuta en un entorno bare-metal sin una IDT configurada, la excepción no puede ser manejada.
+
+Esto genera una cadena de fallos:
+
+1. Excepción inicial (protección de segmento)  
+2. Falla al intentar manejarla (ausencia de IDT)  
+3. Triple Fault  
+
+La consecuencia arquitectónica es un reinicio del procesador.
 
 Se depuró el código paso a paso verificando este comportamiento:
 
 ![tp](img/triplefault.jpeg)
 
-***¿Qué debería suceder a continuación?***
-
-Dado que el programa se ejecuta en un entorno bare-metal primitivo, aún no existe una Tabla de Descriptores de Interrupciones (IDT) configurada por el sistema operativo para "atajar" esta excepción. Al no poder manejar el error, el procesador sufre un error en cascada que desemboca en un Triple Fault.
-La consecuencia arquitectónica del Triple Fault es un hard-reset del procesador.
-
-Al dar un paso más en la depuración, se corroboró este comportamiento: el Program Counter saltó repentinamente a la dirección 0xe05b. Este rango de memoria pertenece a la ROM de la BIOS, demostrando que la máquina virtual se reinició tras detectar la violación de permisos del segmento:
+Al avanzar en la depuración, se observó que el Program Counter salta a una dirección desconocida:
 
 ![tpp](img/triplefaultpost.jpeg)
 
+Con el log de QEMU confirmamos el reinicio:
+
+![logqemu](img/logqemu.png)
 
 
-# 11. Apartado de respuestas
+## Caso 2: Ejecución correcta (Segmento de lectura/escritura)
+
+Cuando el descriptor de datos se configura correctamente con permisos de lectura/escritura (0b10010010), el sistema funciona sin errores.
+
+La instrucción de prueba:
+
+```asm
+movb $0xAA, (%ebx)
+```
+
+se ejecuta correctamente, ya que el segmento permite operaciones de escritura.
+
+![pre_correcto](img/pre_correcto.png)
+![post_correcto1](img/post_correcto1.png)
+![post_correcto2](img/post_correcto2.png)
+
+
+## Prueba extra: Visualización inicial en pantalla
+
+## Limpieza de pantalla
+
+Dado que la memoria de video conserva información previa, antes de mostrar un "OK" en modo protegido se ejecuta una rutina para limpiar la pantalla:
+
+```asm
+movl $0xA8000, %edi
+movl $80*25, %ecx
+movw $0x0720, %ax
+
+clear_screen:
+    movw %ax, (%edi)
+    addl $2, %edi
+    loop clear_screen
+```
+
+### Explicación
+
+- 0xA8000: Dirección base de la memoria de video en modo texto.  
+- Cada celda ocupa 2 bytes:
+  - 1 byte: carácter ASCII  
+  - 1 byte: atributo (color)  
+
+- 0x0720:
+  - 0x20 → carácter espacio  
+  - 0x07 → atributo (gris claro sobre negro pero no se verá ya que se carga caracter "espacio")  
+
+- Bucle loop:
+  - Itera 80 × 25 = 2000 posiciones (toda la pantalla)
+  - En cada iteración:
+    - Escribe un espacio en pantalla
+    - Avanza 2 bytes en memoria
+
+El resultado es una pantalla completamente limpia.
+
+
+## Estado final del sistema
+
+- En el caso incorrecto → Triple Fault y reinicio  
+- En el caso correcto →  
+  - Se escribe en memoria sin errores  
+  - Se limpia la pantalla correctamente  
+  - Se muestra "OK" en pantalla  
+  - El sistema queda ejecutando en un bucle infinito (jmp .) en Modo Protegido  
+
+![pantallaOK](img/pantallaOK.png)
+
+Esto demuestra tanto el correcto funcionamiento de la transición a Modo Protegido como la efectividad del mecanismo de protección de memoria implementado mediante la GDT.
+
+# 7. Apartado de respuestas
 
 **¿Qué es UEFI? ¿como puedo usarlo? Mencionar además una función a la que podría llamar usando esa dinámica**
 
@@ -276,6 +397,6 @@ Sería un programa donde una misma dirección lógica (por ejemplo, la direcció
 
 **En modo protegido, ¿Con qué valor se cargan los registros de segmento ? ¿Porque?** 
 
-En Modo Protegido, los registros de segmento (CS, DS, ES, SS, etc.) ya no se cargan con direcciones de memoria física base. En su lugar, se cargan con un valor llamado Selector de Segmento (por ejemplo, $0x08 o $0x10).
+En Modo Protegido, los registros de segmento (CS, DS, ES, SS, etc.) ya no se cargan con direcciones de memoria física base. En su lugar, se cargan con un valor llamado Selector de Segmento (por ejemplo, `$0x08 ` o `$0x10`).
 
 La razón es que este selector funciona como un índice. Un selector señala a un descriptor de segmento específico dentro de la GDT. El procesador utiliza este valor para ubicar la entrada en la tabla y cargar automáticamente en sus registros caché invisibles la verdadera dirección Base de 32 bits, el Límite de 20 bits y los Atributos de seguridad del segmento.
