@@ -12,6 +12,8 @@
 
 [Repositorio Galoppo](https://github.com/JoseMGaloppo/TP3-SdC-2026)
 
+[Repositorio Diaz](https://github.com/Pablodadiaz/TP3-SdC-2026)
+
 ---
 
 # 1. Introducción General
